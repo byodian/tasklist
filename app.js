@@ -1,91 +1,138 @@
-// Display input
-document.addEventListener('DOMContentLoaded', function() {
-  const tasks = JSON.parse(localStorage.getItem('tasks'));
+// define UI vars
+const clearBtn = document.querySelector('.clear-tasks');
+const taskList = document.querySelector('.collection');
+const taskInput = document.querySelector('#task');
+const filter = document.querySelector('#filter');
+const form = document.querySelector('#task-form');
 
-  tasks.forEach(function(task) {
-    // Add tasks to UI
-    const li = `
-      <li class="collection-item">
-        ${task}
-        <a href="#" class="delete-item secondary-content">
-          <i class="fa fa-remove"></i>
-        </a>
-      </li>
-    `;
-
-    const taskList = document.querySelector('.collection');
-    taskList.insertAdjacentHTML('afterbegin', li);
-  });
-});
-
-// Add a task
-document.querySelector('form').addEventListener('submit', function(e) {
-  // Get input value
-  const input = document.querySelector('#task');
-
+function storeTasksInLocalStorage(task) {
   let tasks;
+  if (localStorage.getItem('tasks') === null) {
+    tasks = [];
+  } else {
+    tasks = JSON.parse(localStorage.getItem('tasks'));
+    tasks.push(task);
+  }
 
+  localStorage.setItem('tasks', JSON.stringify(tasks));
+}
+
+function addTask(e) {
+  if (taskInput.value === '') {
+    alert('Add a task');
+  } else {
+    // Create li element
+    const li = `
+      <li class="collection-item">${taskInput.value}<a class="delete-item secondary-content"><i class="fa fa-remove"></i></a></li>`;
+
+    // Add task to UI
+    taskList.insertAdjacentHTML('beforeend', li);
+
+    // Add task to localStorage
+    storeTasksInLocalStorage(taskInput.value);
+
+    // Clear input field
+    taskInput.value = '';
+
+    e.preventDefault();
+  }
+}
+
+function removeTasksFromLocalStorage(taskItem) {
+  let tasks;
   if (localStorage.getItem('tasks') === null) {
     tasks = [];
   } else {
     tasks = JSON.parse(localStorage.getItem('tasks'));
   }
 
-  if (input.value === '') {
-    console.log('Please fill input field');
+  tasks.forEach(function(task, index) {
+    if (taskItem.textContent === task) {
+      tasks.splice(index, 1);
+    }
+  });
+
+  localStorage.setItem('tasks', JSON.stringify(tasks));
+}
+
+// Remove task
+function removeTask(e) {
+  if (e.target.parentElement.classList.contains('delete-item')) {
+    taskList.removeChild(e.target.parentElement.parentElement);
+  }
+
+  // Remove task from localStorage
+  removeTasksFromLocalStorage(e.target.parentElement.parentElement);
+}
+
+function clearTasksFromLocalStorage() {
+  localStorage.clear();
+}
+
+// Clear task
+function clearTasks(e) {
+  while (taskList.firstChild) taskList.removeChild(taskList.firstChild);
+  clearTasksFromLocalStorage();
+  e.preventDefault();
+}
+
+// Filter Task
+function filterTasks(e) {
+  const text = e.target.value.toLowerCase();
+
+  const items = document.querySelectorAll('.collection-item');
+  items.forEach(function(task) {
+    if (task.firstChild.textContent.toLowerCase().indexOf(text) !== -1) {
+      task.style.display = 'block';
+    } else {
+      task.style.display = 'none';
+    }
+  });
+}
+
+// Display tasks
+function displayTasks() {
+  let tasks;
+  if (localStorage.getItem('tasks') === null) {
+    tasks = [];
   } else {
-    tasks.push(input.value);
-
-    // Add a task to localStorage
-    localStorage.setItem('tasks', JSON.stringify(tasks));
-
-    // Add tasks to UI
-    const li = `
-      <li class="collection-item">
-        ${input.value}
-        <a href="#" class="delete-item secondary-content">
-          <i class="fa fa-remove"></i>
-        </a>
-      </li>
-    `;
-
-    const taskList = document.querySelector('.collection');
-    taskList.insertAdjacentHTML('afterbegin', li);
-
-    // Clear input field
-    input.value = '';
+    tasks = JSON.parse(localStorage.getItem('tasks'));
   }
 
-  // Prevent default submit event
-  e.preventDefault();
-});
-
-document.querySelector('.card-action').addEventListener('click', function(e) {
-  e.preventDefault();
-
-  if (e.target.classList.contains('fa-remove')) {
-    // Remove a task from UI
-    e.target.parentElement.parentElement.remove();
-
-    // Remove a task from storage
-    const tasks = JSON.parse(localStorage.getItem('tasks'));
+  // localStoraget tasks items are not empty array
+  if (tasks.length !== 0) {
     tasks.forEach(function(task) {
-      if (e.target.parentElement.parentElement.innerText.includes(task)) {
-        tasks.pop(task);
-      }
+      // Create li element
+      const li = `
+        <li class="collection-item">
+          ${task}
+          <a class="delete-item secondary-content">
+            <i class="fa fa-remove"></i>
+          </a>
+        </li>
+      `;
+
+      // Add task to UI
+      taskList.insertAdjacentHTML('beforeend', li);
     });
-
-    localStorage.setItem('tasks', JSON.stringify(tasks));
-  } else if (e.target.classList.contains('clear-tasks')) {
-    const tasks = document.querySelectorAll('.collection-item');
-    const tasksArr = Array.from(tasks);
-
-    // Remove all tasks from UI
-    tasksArr.forEach(function(task) {
-      task.remove();
-    });
-
-    // Remove tasks from storage
-    localStorage.removeItem('tasks');
   }
-});
+}
+
+function loadEventListener() {
+  // Add a task event
+  form.addEventListener('submit', addTask);
+
+  // Remove task event
+  taskList.addEventListener('click', removeTask);
+
+  // Clear task event
+  clearBtn.addEventListener('click', clearTasks);
+
+  // Filter task event
+  filter.addEventListener('keyup', filterTasks);
+
+  // Display tasks event
+  document.addEventListener('DOMContentLoaded', displayTasks);
+}
+
+loadEventListener();
